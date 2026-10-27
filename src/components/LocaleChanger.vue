@@ -16,14 +16,9 @@ function updateUrlSearch(locale: string) {
 </script>
 
 <template>
-    <div class="locale-info">
-        <a v-bind:href="`https://weblate.catter.dev/projects/jacobsjo/mc-datapack-map/${i18n.locale.value}`" target="_blank">
-            <img v-bind:src="`https://weblate.catter.dev/widget/jacobsjo/mc-datapack-map/${i18n.locale.value}/svg-badge.svg`" alt="Translation status" />
-        </a>
-    </div>
     <div class="locale-changer">
         <font-awesome-icon icon="fa-earth-europe" class="icon" :title="i18n.t('locale.change_locale.title')" />
-        <select v-model="i18n.locale.value" @change="() => updateUrlSearch(i18n.locale.value)">
+        <select :aria-label="i18n.t('locale.change_locale.title')" v-model="i18n.locale.value" @change="() => updateUrlSearch(i18n.locale.value)">
             <option v-for="lang in i18n.availableLocales" :key="lang" :value="lang" :dir="i18n.t('locale.text_direction', [], { locale: lang })">
                 {{ i18n.t("locale.local_name", [], { locale: lang }) }}
             </option>

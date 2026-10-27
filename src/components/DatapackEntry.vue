@@ -31,71 +31,15 @@ import { useI18n } from 'vue-i18n';
         <div class="description">
             <MinecraftText :component="desciption" />
         </div>
-        <font-awesome-icon v-if="removable" icon="fa-xmark" class="close_button" tabindex="0" :title="i18n.t('datapack_list.remove_datapack.title')" @click="$emit('close')" @keypress.enter="$emit('close')" />
+        <button v-if="removable" class="close_button" :aria-label="i18n.t('datapack_list.remove_datapack.title')" :title="i18n.t('datapack_list.remove_datapack.title')" @click="$emit('close')"><font-awesome-icon icon="fa-xmark" /></button>
     </div>
 </template>
 
 <style scoped>
-    .datapack {
-        width: 100%;
-        height: 4rem;
-        box-sizing: border-box;
-        background-color: rgb(66, 66, 66);
-        border-radius: 0.5rem;
-        display: flex;
-        align-items: center;
-        position: relative;
-        padding-inline-end: 0.3rem;
-        gap: 0.3rem;
-    }
-
-    .datapack.unsupported {
-        background-color: rgb(75, 41, 41);
-    }
-
-    .image {
-        width: 4rem;
-        height: 4rem;
-        border-radius: 0.5rem 0 0 0.5rem;
-        user-select: none;
-    }
-
-    .image:dir(rtl) {
-        border-radius: 0 0.5rem 0.5rem 0;
-    }
-
-    .description {
-        flex-grow: 1;
-        text-align: center;
-        overflow: hidden;
-        max-height: 100%;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
-        font-family: sans-serif;
-        font-size: 16px;
-        line-height: 1.2rem;
-    }
-
-    .close_button {
-        position: absolute;
-        right: 1rem;
-        background-color: rgb(48, 48, 48);
-        padding: 0.25rem;
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 0.5rem;
-        opacity: 0;
-        transition: 0.1s;
-        cursor: pointer;
-    }
-
-    .datapack:hover .close_button, .close_button:focus {
-        opacity: 1;
-    }
-
-    .close_button:hover, .close_button:focus {
-        background-color: rgb(158, 0, 0);
-    }
+.datapack {width: 100%; min-height: 56px; background: #203145; border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; padding: 8px; gap: 10px;}
+.datapack.unsupported {border-color: #ad7047; background: #3b302a;}
+.image {width: 36px; height: 36px; border-radius: 5px; flex-shrink: 0; image-rendering: pixelated;}
+.description {flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; line-height: 1.5; max-height: 5rem; overflow: auto;}
+.close_button {width: 28px; height: 28px; flex-shrink: 0; padding: 5px;}
+.close_button:hover {color: #ffb4b4; border-color: #af6262;}
 </style>

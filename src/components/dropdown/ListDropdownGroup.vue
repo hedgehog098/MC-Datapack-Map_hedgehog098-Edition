@@ -58,22 +58,22 @@ function isGroupSelected (selected: any, group_name: any) {
 
 <style scoped>
 .header {
-    background-color: rgb(78, 78, 78);
+    background-color: var(--surface);
     padding: 0.5rem;
     cursor: pointer;
     user-select: none;
 }
 
 .header:hover {
-    background-color: rgb(105, 105, 105);
+    background-color: #2c4259;
 }
 
 .header.selected {
-    background-color: rgb(102, 116, 23);
+    background-color: #21434b;
 }
 
 .header.selected:hover {
-    background-color: rgb(129, 146, 35);
+    background-color: #31616a;
 }
 
 

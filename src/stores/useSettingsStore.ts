@@ -6,6 +6,8 @@ import { useDatapackStore } from "./useDatapackStore.js";
 import { EventTracker } from "../util/EventTracker.js";
 import { parseSeed, updateUrlParam, versionMetadata } from "../util.js";
 
+import { readPreference, writePreference } from "../util/preferences.js";
+
 export const useSettingsStore = defineStore('settings', () => {
     const defaults = {
         mc_version: "26_2",
@@ -15,7 +17,10 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     const uri = window.location.search.substring(1)
-    const params = {...defaults, ...Object.fromEntries(new URLSearchParams(uri))}
+    const saved = readPreference<Record<string, string>>('world', {})
+    const validSaved = Object.fromEntries(Object.entries(saved ?? {}).filter(([key, value]) =>
+        key in defaults && typeof value === 'string' && (key !== 'world_preset' && key !== 'dimension' || /^[a-z0-9_.-]+:[a-z0-9_./-]+$/.test(value))))
+    const params = {...defaults, ...validSaved, ...Object.fromEntries(new URLSearchParams(uri))}
 
     if (versionMetadata[params.mc_version] === undefined){
         params.mc_version = defaults.mc_version
@@ -26,11 +31,17 @@ export const useSettingsStore = defineStore('settings', () => {
 
     const collator = computed(() => new Intl.Collator(i18n.locale.value.replace('_','-')))
     
-    const dev_mode = ref(false)
+    const dev_mode = ref(readPreference<boolean>('dev-mode', false) === true)
     const mc_version = ref(versionMetadata[params.mc_version] ? params.mc_version : defaults.mc_version)
     const world_preset = ref(Identifier.parse(params.world_preset))
     const dimension = ref(Identifier.parse(params.dimension))
     const seed = ref(parseSeed(params.seed))
+
+    watch([mc_version, world_preset, dimension, seed], () => {
+        writePreference('world', {mc_version: mc_version.value, world_preset: world_preset.value.toString(), dimension: dimension.value.toString(), seed: seed.value.toString()})
+    }, {immediate: true})
+    watch(dev_mode, value => writePreference('dev-mode', value))
+    watch(i18n.locale, value => writePreference('language', value), {immediate: true})
 
     const datapackStore = useDatapackStore()
 

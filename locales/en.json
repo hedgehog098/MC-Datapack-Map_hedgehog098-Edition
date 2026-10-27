@@ -117,5 +117,95 @@
     "tip_message.message": "If you find this map useful, I would appreciate a Tip!",
     "tip_message.kofi": "Buy Me a Coffee",
     "tip_message.github": "Sponsor",
-    "tip_message.close": "Dismiss"
+    "tip_message.close": "Dismiss",
+    "local": {
+        "priority": {
+            "title": "Structure icon priority",
+            "help": "High: visible at all zoom levels; medium: zoom ≥ -3; low: zoom ≥ -1. Auto uses structure density. Select structures in the structure menu first.",
+            "empty": "No structures selected.",
+            "auto": "Auto",
+            "high": "High · all zooms",
+            "medium": "Medium · ≥ -3",
+            "low": "Low · ≥ -1"
+        },
+        "coordinates": {
+            "go": "Go",
+            "error": "Enter valid X/Z coordinates between -30,000,000 and 30,000,000."
+        },
+        "visibility": {
+            "hiddenLevel": "{level} priority hidden ({count} structure types)",
+            "high": "High",
+            "medium": "Medium",
+            "low": "Low",
+            "auto": "Automatic density",
+            "loading": "Structure positions still loading: {done} / {total} candidates checked",
+            "images": "Structure images still loading: {count} remaining",
+            "errors": "Some structures failed to load: {calculations} calculations, {images} images",
+            "worldLoading": "Reloading world data; structure positions are not ready…",
+            "worldError": "World data failed to load. Check datapacks or change configuration.",
+            "preparing": "Updating structure display…"
+        },
+        "route": {
+            "title": "Distant structures / route",
+            "help": "Search outwards from the map center and combine selected structures into one route.",
+            "group": "Saved group",
+            "chooseGroup": "Choose a group…",
+            "groupName": "Group name",
+            "saveGroup": "Save / update group",
+            "deleteGroup": "Delete group",
+            "filter": "Filter structure name or ID",
+            "unsupported": "Location unsupported",
+            "selected": "{count} types selected",
+            "clearSelection": "Clear selection",
+            "limit": "Result limit (1–500)",
+            "radius": "Search radius (blocks)",
+            "spacing": "Minimum spacing (blocks)",
+            "spacingHelp": "0 allows any spacing. Increase to find widely separated locations. Maximum radius: 1,000,000 blocks.",
+            "origin": "Search origin: current map center X {x}, Z {z}",
+            "start": "Search and plan route",
+            "stop": "Stop and keep results",
+            "progress": "Checked {checked} candidates, found {found}; current scan ring extends about {radius} blocks",
+            "result": "{count} stops · estimated straight-line travel {distance} blocks",
+            "routeNote": "Start X {x} / Z {z} · One-way · Approximate route, ignoring terrain.",
+            "copy": "Copy X/Z route list",
+            "copied": "Copied",
+            "copyFailed": "Could not copy. Please select the list manually.",
+            "locate": "Locate stop",
+            "memories": "Last two searches · {count} excluded in this world",
+            "memoryHelp": "Excludes the last two nonempty results across groups, scoped to each world. Empty results keep existing memory.",
+            "noMemory": "No saved searches.",
+            "memory": "Memory {index}: {count} stops",
+            "restore": "View route",
+            "otherWorld": "Different world configuration; not excluded here.",
+            "clearMemory": "Clear both memories",
+            "status": {
+                "idle": "No search started.",
+                "searching": "Searching; the page remains interactive…",
+                "limit": "Result limit reached.",
+                "radius": "Finished searching the specified radius.",
+                "cancelled": "Stopped; found results retained.",
+                "worldChanged": "World configuration changed. Old search cancelled; start again.",
+                "memory": "Viewing a saved route.",
+                "error": "Search did not finish."
+            },
+            "error": {
+                "selection": "Select at least one structure type.",
+                "unsupported": "Selection contains unsupported or unavailable structures. Please adjust it.",
+                "limits": "Use an integer limit of 1–500, radius of 1–1,000,000 and minimum spacing no greater than the radius.",
+                "unavailable": "No usable structure placement rules in this datapack.",
+                "failed": "Structure calculation failed. Check datapack support or retry with fewer structure types."
+            },
+            "selectTypes": "Choose structure types ({count} selected)"
+        },
+        "ui": {
+            "title": "World Map",
+            "world": "World settings",
+            "interface": "Interface",
+            "datapacks": "Loaded datapacks",
+            "tools": "Map tools",
+            "add": "Packs",
+            "biomes": "Biomes",
+            "structures": "Structures"
+        }
+    }
 }

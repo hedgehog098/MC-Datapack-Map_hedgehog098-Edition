@@ -109,5 +109,95 @@
     "modrinth.include-mods.aria-label": "搜索时包含的mods",
     "settings.mc_version.mc1_21_5": "Minecraft 1.21.5",
     "modrinth.ignore-version.aria-label": "在搜索时忽略Minecraft版本",
-    "modrinth.include-mods.notice": "并非所有mods都受此地图支持"
+    "modrinth.include-mods.notice": "并非所有mods都受此地图支持",
+    "local": {
+        "priority": {
+            "title": "结构图标优先级",
+            "help": "高：所有缩放等级显示；中：缩放 ≥ -3；低：缩放 ≥ -1。自动按结构密度决定。请先在结构菜单勾选要显示的结构。",
+            "empty": "尚未选择结构。",
+            "auto": "自动",
+            "high": "高 · 始终显示",
+            "medium": "中 · ≥ -3",
+            "low": "低 · ≥ -1"
+        },
+        "coordinates": {
+            "go": "确定",
+            "error": "请输入有效的 X/Z 坐标，范围为 ±30,000,000。"
+        },
+        "visibility": {
+            "hiddenLevel": "{level}优先级已隐藏（{count} 种结构）",
+            "high": "高",
+            "medium": "中",
+            "low": "低",
+            "auto": "自动密度规则",
+            "loading": "结构位置尚未加载完整：已计算 {done} / {total} 个候选位置",
+            "images": "结构图标图片仍在加载：剩余 {count} 个",
+            "errors": "部分结构未能加载：计算失败 {calculations} 项，图片失败 {images} 个",
+            "worldLoading": "世界数据正在重载，结构位置尚未加载完整…",
+            "worldError": "世界数据加载失败，请检查数据包或切换配置。",
+            "preparing": "正在更新结构显示…"
+        },
+        "route": {
+            "title": "远距离结构搜索 / 路线",
+            "help": "从地图中心向外搜索，将所选结构组合为一条旅行路线。",
+            "group": "已保存的组",
+            "chooseGroup": "选择分组…",
+            "groupName": "分组名称",
+            "saveGroup": "保存 / 更新组",
+            "deleteGroup": "删除组",
+            "filter": "筛选结构名称或 ID",
+            "unsupported": "暂不支持定位",
+            "selected": "已选择 {count} 种",
+            "clearSelection": "清空选择",
+            "limit": "结果上限（1–500）",
+            "radius": "搜索半径（格）",
+            "spacing": "结果最小间距（格）",
+            "spacingHelp": "间距 0 不限制；可增加间距来寻找相距较远的地点。半径最多 1,000,000 格。",
+            "origin": "搜索起点：当前地图中心 X {x}，Z {z}",
+            "start": "开始搜索并规划路线",
+            "stop": "停止并保留已找到结果",
+            "progress": "已检查 {checked} 个候选，找到 {found} 个；当前扫描环范围约 {radius} 格",
+            "result": "共 {count} 个地点 · 预计直线旅行距离 {distance} 格",
+            "routeNote": "起点 X {x} / Z {z} · 单程路线 · 近似优化，不计地形障碍。",
+            "copy": "复制 X/Z 路线列表",
+            "copied": "已复制",
+            "copyFailed": "复制失败，请手动选择列表内容。",
+            "locate": "在地图上定位第",
+            "memories": "最近两次搜索记忆 · 当前世界排除 {count} 个",
+            "memoryHelp": "自动排除最近两次非空结果，跨分组共享；不同世界分别识别。空结果不覆盖记忆。",
+            "noMemory": "暂无记忆。",
+            "memory": "记忆 {index}：{count} 个地点",
+            "restore": "查看这次路线",
+            "otherWorld": "属于其他世界配置，当前不参与去重。",
+            "clearMemory": "清空两次记忆",
+            "status": {
+                "idle": "尚未开始搜索。",
+                "searching": "正在搜索，页面仍可操作…",
+                "limit": "已达到结果数量上限。",
+                "radius": "已完成指定半径范围的搜索。",
+                "cancelled": "已停止，保留已找到的结果。",
+                "worldChanged": "世界配置已变化，旧搜索已取消；可重新开始。",
+                "memory": "正在查看保存的路线。",
+                "error": "搜索未完成。"
+            },
+            "error": {
+                "selection": "请至少选择一个结构类型。",
+                "unsupported": "所选结构包含当前不支持或已不可用的类型，请调整选择。",
+                "limits": "请输入有效范围：数量为 1–500 的整数，半径为 1–1,000,000 格，最小间距不能大于半径。",
+                "unavailable": "当前数据包没有可用的结构放置规则。",
+                "failed": "结构计算失败。请检查数据包是否支持此结构，或减少所选类型后重试。"
+            },
+            "selectTypes": "选择结构类型（已选 {count} 种）"
+        },
+        "ui": {
+            "title": "世界地图",
+            "world": "世界设置",
+            "interface": "界面设置",
+            "datapacks": "已加入的数据包",
+            "tools": "地图工具",
+            "add": "数据包",
+            "biomes": "群系",
+            "structures": "结构"
+        }
+    }
 }

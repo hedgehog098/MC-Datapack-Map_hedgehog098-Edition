@@ -51,9 +51,11 @@ async function loadRecent(recent: StoredDatapack) {
         }
 
         var datapack = undefined
+        let source: import('../../util/datapackPersistence').DatapackSource | undefined
         try {
             if (handle.kind === 'file') {
                 const file = await (handle as FileSystemFileHandle).getFile()
+                source = {kind: 'zip', file}
                 datapack = Datapack.fromZipFile(file, versionMetadata[settingsStore.mc_version].datapackFormat)
                 // if old version stored local file system handle, store it in opfs now
                 if (!recent.storedInOpfs){
@@ -64,11 +66,12 @@ async function loadRecent(recent: StoredDatapack) {
                     recentStore.addRecentFileHandle(handle, datapack)
                 }
             } else {
+                source = {kind: 'folder', handle: handle as FileSystemDirectoryHandle}
                 datapack = Datapack.fromFileSystemDirectoryHandle(handle as FileSystemDirectoryHandle, versionMetadata[settingsStore.mc_version].datapackFormat)
                 recentStore.addRecentFileHandle(handle, datapack)
                 EventTracker.track(`add_datapack/folder/from_recent`)
             }
-            datapackStore.addDatapack(datapack)
+            datapackStore.addDatapack(datapack, source)
         } catch (e){
             if (e instanceof DOMException){
                 if (recent.storedInOpfs){
@@ -89,7 +92,7 @@ async function loadRecent(recent: StoredDatapack) {
 async function loadPreset(preset: Preset) {
     EventTracker.track(`add_datapack/built_in/${preset.id}`)
     const datapack = Datapack.fromZipUrl(preset.url, versionMetadata[settingsStore.mc_version].datapackFormat)
-    datapackStore.addDatapack(datapack)
+    datapackStore.addDatapack(datapack, {kind: 'url', url: preset.url})
     emit('close')
 }
 
@@ -98,7 +101,7 @@ async function loadZip(event: MouseEvent) {
     async function addZipDatapack(file: File) {
         EventTracker.track(`add_datapack/zip`)
         const datapack = Datapack.fromZipFile(file, versionMetadata[settingsStore.mc_version].datapackFormat)
-        datapackStore.addDatapack(datapack)
+        datapackStore.addDatapack(datapack, {kind: 'zip', file})
         return datapack
     }
 
@@ -154,10 +157,12 @@ async function loadZip(event: MouseEvent) {
 
 async function loadFolder(event: MouseEvent) {
     var datapack: Datapack | undefined = undefined
+    let source: import('../../util/datapackPersistence').DatapackSource | undefined
 
     if ("showDirectoryPicker" in window) {
         try {
             const handle = await window.showDirectoryPicker()
+            source = {kind: 'folder', handle}
             datapack = Datapack.fromFileSystemDirectoryHandle(handle, versionMetadata[settingsStore.mc_version].datapackFormat)
             recentStore.addRecentFileHandle(handle, datapack)
         } catch (e) {
@@ -169,7 +174,8 @@ async function loadFolder(event: MouseEvent) {
             input.webkitdirectory = true
 
             input.onchange = async () => {
-                resolve(Datapack.fromFileList(Array.from(input.files), versionMetadata[settingsStore.mc_version].datapackFormat))
+                source = {kind: 'files', files: Array.from(input.files)}
+                resolve(Datapack.fromFileList(source.files, versionMetadata[settingsStore.mc_version].datapackFormat))
             }
             input.click()
         })
@@ -177,7 +183,7 @@ async function loadFolder(event: MouseEvent) {
 
     if (datapack !== undefined) {
         EventTracker.track(`add_datapack/folder`)
-        datapackStore.addDatapack(datapack)
+        datapackStore.addDatapack(datapack, source)
     }
     emit('close')
 }
@@ -240,7 +246,7 @@ const PRESET_DATAPACKS = computed(() => {
 }
 
 .title {
-    color: rgb(53, 53, 53);
+    color: var(--muted);
     text-align: initial;
     width: 100%;
     box-sizing: border-box;
@@ -268,7 +274,7 @@ const PRESET_DATAPACKS = computed(() => {
 }
 
 .empty {
-    color: rgb(78, 78, 78);
+    color: var(--muted);
 }
 
 .small {

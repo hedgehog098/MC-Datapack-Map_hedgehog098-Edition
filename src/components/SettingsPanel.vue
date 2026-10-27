@@ -80,16 +80,19 @@ function randomizeSeed() {
 
 .title {
     height: fit-content;
-    width: 6.3rem;
+    width: 5rem;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--muted);
 }
 
 .title.short {
-    width: 3.8rem;
+    width: 5rem;
 }
 
 .button {
-    background-color: lightgray;
-    color: black;
+    background-color: var(--control);
+    color: var(--text);
     padding: 0.2rem;
     height: 1.6rem;
     width: 1.6rem;
@@ -98,17 +101,17 @@ function randomizeSeed() {
 
 .button:hover,
 .button:active {
-    background-color: white;
+    background-color: #2c465c;
 }
 
 select,
 input {
     box-sizing: border-box;
     height: 2rem;
-    background-color: lightgray;
+    background-color: var(--control);
     width: 0;
     flex-grow: 1;
-    color: black;
+    color: var(--text);
     border-radius: 0.3rem;
     border: 2px solid rgb(55, 120, 173);
 }</style>

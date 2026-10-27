@@ -36,7 +36,7 @@ const color = computed(() => props.colors?.(props.entry?.id))
 
 <style scoped>
 .entry {
-    background-color: rgb(88, 88, 88);
+    background-color: var(--panel);
     transition: 0.3s;
     cursor: pointer;
     padding: 0.1rem;
@@ -52,15 +52,15 @@ const color = computed(() => props.colors?.(props.entry?.id))
 }
 
 .entry:hover {
-    background-color: rgb(126, 126, 126);
+    background-color: #2c4259;
 }
 
 .entry.selected {
-    background-color: rgb(135, 156, 14);
+    background-color: #24545b;
 }
 
 .entry.selected:hover {
-    background-color: rgb(168, 192, 30);
+    background-color: #316b70;
 }
 
 img {

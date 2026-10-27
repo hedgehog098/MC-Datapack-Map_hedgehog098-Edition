@@ -60,13 +60,13 @@ const grouped_entries = computed<{[key: string]: {id: Identifier, localized: str
 
 <style scoped>
     .dropdown {
-        background-color: rgb(59, 59, 59);
+        background-color: var(--surface);
         padding-bottom: 0;
         padding: 0;
     }
 
     input {
-        background-color: rgb(59, 59, 59);
+        background-color: var(--surface);
         color: white;
         padding: 0.5rem;
         padding-bottom: 0.1rem;
@@ -90,7 +90,7 @@ const grouped_entries = computed<{[key: string]: {id: Identifier, localized: str
         height: 25rem;
         width: 100%;
         padding: 0rem;
-        background-color: rgb(88, 88, 88);
+        background-color: var(--panel);
         overflow-y: scroll;
         list-style-type: none;
         -ms-overflow-style: none;

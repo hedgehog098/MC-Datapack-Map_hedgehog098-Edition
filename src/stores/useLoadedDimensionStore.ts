@@ -25,21 +25,40 @@ export const useLoadedDimensionStore = defineStore('loaded_dimension', () => {
     const settingsStore = useSettingsStore()
     const i18n = useI18n()
 
+    const loading = ref(false)
+    const revision = ref(0)
+    const loadError = ref(false)
+    let requested = 0
+    let reloadQueue: Promise<void> = Promise.resolve()
     const loaded_dimension = reactive<LoadedDimension>({})
     var biome_source: BiomeSource | undefined = undefined
     var biome_colors: Map<string, { r: number, g: number, b: number } > = new Map<string, { r: number, g: number, b: number}>()
 
     var default_messages: {[key: string]: string} = {}
 
-    datapackStore.$subscribe((mutation, state) => {
-        reload()
-    })
+    const queueReload = () => { void reload().catch(error => console.error('World reload failed', error)) }
+    datapackStore.$subscribe(queueReload, {flush: 'sync'})
+    watch([() => settingsStore.mc_version, () => settingsStore.world_preset, () => settingsStore.dimension, () => settingsStore.seed], queueReload, {flush: 'sync'})
 
-    watch(() => settingsStore.mc_version, reload)
-    watch(() => settingsStore.world_preset, reload)
-    watch(() => settingsStore.dimension, reload)
-    watch(() => settingsStore.seed, reload)
-    
+    function reload(): Promise<void> {
+        const request = ++requested
+        loading.value = true
+        loadError.value = false
+        const run = reloadQueue.then(async () => {
+            if (request !== requested) return
+            await loadDimension()
+            if (request === requested) {
+                loading.value = false
+                revision.value++
+            }
+        }).catch(error => {
+            if (request === requested) {loading.value = false; loadError.value = true}
+            throw error
+        })
+        reloadQueue = run.catch(() => {})
+        return run
+    }
+
     function handle_biome_colors(namespace:string, json: {[key: string]: { r: number, g: number, b: number, name?: string }}){
         for (const biome in json) {
             const biome_id = biome.indexOf(":") === -1 ? namespace + ":" + biome : biome
@@ -84,7 +103,7 @@ export const useLoadedDimensionStore = defineStore('loaded_dimension', () => {
         }
     }
 
-    async function reload() {
+    async function loadDimension() {
         await datapackStore.reloadDatapack()
 
         const ld: LoadedDimension = {}
@@ -243,6 +262,6 @@ export const useLoadedDimensionStore = defineStore('loaded_dimension', () => {
         return biome_source
     }
 
-    return { loaded_dimension, noise_generator_settings, sampler, surface_density_function, terrain_density_function, reload, getIcon, getBiomeColor, getBiomeSource }
+    return { loading, revision, loadError, loaded_dimension, noise_generator_settings, sampler, surface_density_function, terrain_density_function, reload, getIcon, getBiomeColor, getBiomeSource }
 })
 

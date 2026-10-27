@@ -23,8 +23,9 @@ onMounted(() => {
     left: 50%;
     transform: translateX(-50%);
     top: calc(100% + 0.25rem);
-    background-color: gray;
-    border-radius: 1.5rem;
+    background-color: var(--panel);
+    border-radius: 10px;
+    box-shadow: 0 12px 36px #0006;
     display: flex;
     flex-direction: column;
     gap: 0.05rem;
@@ -33,6 +34,6 @@ onMounted(() => {
     align-items: center;
     overflow: hidden;
     z-index: 50;
-    border: 3px solid rgb(80, 80, 80);
+    border: 1px solid var(--border);
 }
 </style>

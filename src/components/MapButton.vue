@@ -19,51 +19,11 @@
 </script>
 
 <template>
-    <font-awesome-icon :icon="icon" class="button"
-        :class="{
-            active: modelValue,
-            disabled: disabled
-        }"
-        tabindex="0"
-        :title="title"
-        @click="toggle"
-        @keypress.enter="toggle" />
-
+    <button type="button" class="map-button" :class="{active: modelValue}" :disabled="disabled" :title="title" :aria-label="title" :aria-pressed="modelValue" @click="toggle"><font-awesome-icon :icon="icon" /></button>
 </template>
-
 <style scoped>
-    .button {
-        background-color: gray;
-        padding: 0.3rem;
-        width: 1.3rem;
-        height: 1.3rem;
-        border-radius: 0.3rem;
-        cursor: pointer;
-        border: 2px solid rgb(65, 65, 65);
-        outline: none;
-    }
-
-    .button:hover {
-        background-color: rgb(160, 160, 160);
-    }
-
-    .button:focus-visible {
-        outline: 2px solid yellow   ;    
-    }
-
-    .button.active {
-        background-color: rgb(193, 224, 17);
-    }
-
-    .button.disabled {
-        background-color: rgb(129, 129, 129);
-        color: rgb(95, 95, 95);
-        cursor: default;
-        border-color: rgb(95, 95, 95);
-    }
-
-    .button.active.disabled {
-        background-color: rgb(169, 173, 148);
-    }
+.map-button {width: 34px; height: 34px; padding: 7px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 3px 10px #0003; color: var(--text);}
+.map-button.active {background: var(--accent); color: #12363b; border-color: var(--accent);}
+.map-button:disabled {opacity: .4;}
+.map-button svg {width: 16px; height: 16px;}
 </style>
-

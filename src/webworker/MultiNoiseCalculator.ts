@@ -26,6 +26,7 @@ class MultiNoiseCalculator {
 	}
 
 	private taskQueue: any[] = []
+	private running = false
 
 	public update(update: {
 		biomeSourceJson?: unknown,
@@ -100,6 +101,7 @@ class MultiNoiseCalculator {
 
 	public addTask(task: any){
 		this.taskQueue.push(task)
+		if (!this.running) void this.loop()
 	}
 
 	public removeTask(key: string){
@@ -110,40 +112,55 @@ class MultiNoiseCalculator {
 	}
 
 	public async loop() {
-		while (true) {
-			if (this.taskQueue.length === 0) {
-				await new Promise(r => setTimeout(r, 1000));
-			} else {
-				const nextTaks = this.taskQueue.shift()
-				this.calculateMultiNoiseValues(nextTaks.key, nextTaks.min.x, nextTaks.min.y, nextTaks.max.x, nextTaks.max.y, nextTaks.tileSize)
-				await new Promise(r => setTimeout(r, 0));
-			}
-		}
-	}
+        this.running = true
+        while (this.taskQueue.length) {
+            const task = this.taskQueue.shift()
+            if (task.generationVersion === this.state.generationVersion) {
+                this.calculateMultiNoiseValues(task.key, task.min.x, task.min.y, task.max.x, task.max.y, task.tileSize, task.requestId)
+            }
+            // Yield so updates and cancellation messages can be processed between tiles.
+            await new Promise(resolve => setTimeout(resolve, 0))
+        }
+        this.running = false
+    }
 
-	private calculateMultiNoiseValues(key: string, min_x: number, min_z: number, max_x: number, max_z: number, tileSize: number): void {
-		const array: { surface: number, biome: string, terrain: number }[][] = Array(tileSize + 2)
+	private calculateMultiNoiseValues(key: string, min_x: number, min_z: number, max_x: number, max_z: number, tileSize: number, requestId: number): void {
+		const width = tileSize + 2
+        const surfaceValues = new Float64Array(width * width)
+        const terrainValues = new Float64Array(width * width)
+        const biomeValues = new Uint16Array(width * width)
+        const palette: string[] = []
+        const paletteIds = new Map<string, number>()
 		const step = (max_x - min_x) / tileSize
-		for (let ix = -1; ix < tileSize + 2; ix++) {
-			array[ix] = Array(tileSize + 2)
-			for (let iz = -1; iz < tileSize + 2; iz++) {
+		for (let ix = 0; ix < tileSize + 2; ix++) {
+			for (let iz = 0; iz < tileSize + 2; iz++) {
 				const x = ix * step + min_x
 				const z = iz * step + min_z
 				const surface = this.state.surfaceDensityFunction?.compute(DensityFunction.context(x * 4, this.state.y, z * 4)) ?? Number.POSITIVE_INFINITY
 				const y = this.state.projectDown ? Math.min(surface, this.state.y) : this.state.y
 				const biome = this.state.biomeSource?.getBiome(x, y >> 2, z, this.state.sampler!).toString() ?? "minecraft:plains"
 				const terrain = this.state.terrainDensityFunction?.compute(DensityFunction.context(x * 4, y , z * 4)) ?? Number.POSITIVE_INFINITY
-				array[ix][iz] = { surface, biome, terrain }
+				const index = ix * width + iz
+                surfaceValues[index] = surface
+                terrainValues[index] = terrain
+                let biomeId = paletteIds.get(biome)
+                if (biomeId === undefined) {
+                    biomeId = palette.length
+                    paletteIds.set(biome, biomeId)
+                    palette.push(biome)
+                }
+                biomeValues[index] = biomeId
 			}
 		}
 
-		postMessage({ key, array, step, generationVersion: this.state.generationVersion })
+		postMessage({ key, requestId, surfaceValues, terrainValues, biomeValues, palette, step, generationVersion: this.state.generationVersion },
+            [surfaceValues.buffer, terrainValues.buffer, biomeValues.buffer])
 	}
 }
 
 
 const multiNoiseCalculator = new MultiNoiseCalculator()
-multiNoiseCalculator.loop()
+
 
 self.onmessage = (evt: ExtendableMessageEvent) => {
 	if ("update" in evt.data){

@@ -1,15 +1,28 @@
 import { Identifier, StructurePlacement, StructureSet, WorldgenStructure } from "deepslate";
 import { defineStore } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 
+
+import { readPreference, writePreference, stringList } from "../util/preferences.js";
+
+import { useLoadedDimensionStore } from './useLoadedDimensionStore.js';
+import { supportedStructure } from '../util/structures.js';
 
 export const useSearchStore = defineStore('search', () => {
-    const biomes = reactive<Set<string>>(new Set())
-    const structures = reactive<Set<string>>(new Set())
+    const dimensionStore = useLoadedDimensionStore()
+    const biomes = reactive<Set<string>>(new Set(stringList(readPreference('biomes', []))))
+    const structures = reactive<Set<string>>(new Set(stringList(readPreference('structures', []))))
 
-    const disabled = ref(false)
+    const disabled = ref(readPreference<boolean>('biomes-disabled', false) === true)
+    const savedPriorities = readPreference<Record<string, string>>('structure-priorities', {})
+    const priorities = reactive<Record<string, string>>(Object.fromEntries(Object.entries(savedPriorities ?? {}).filter(([, value]) => ['auto', 'high', 'medium', 'low'].includes(value))))
+    watch(biomes, value => writePreference('biomes', [...value]))
+    watch(structures, value => writePreference('structures', [...value]))
+    watch(priorities, value => writePreference('structure-priorities', value))
+    watch(disabled, value => writePreference('biomes-disabled', value))
 
     const structure_sets = computed(() => {
+        dimensionStore.revision // Registries are rebuilt after world/datapack changes.
         structures.size // make sure any change to structures triggers recomputation
         const sets: Identifier[] = []
 
@@ -25,7 +38,7 @@ export const useSearchStore = defineStore('search', () => {
                 if (structures.has(entry.structure.key()?.toString() ?? "<>")){
                     set_needed = true
                     const s = entry.structure.value()
-                    if (s instanceof WorldgenStructure.MineshaftStructure || s instanceof WorldgenStructure.NetherFossilStructure || s instanceof WorldgenStructure.OceanMonumentStructure || s instanceof WorldgenStructure.RuinedPortalStructure){
+                    if (!supportedStructure(s)){
                         set_invalid = true
                     }
                 }
@@ -41,5 +54,5 @@ export const useSearchStore = defineStore('search', () => {
         return {sets, has_invalid: has_invalid_set}
     })
 
-    return {biomes, structures, structure_sets, disabled}
+    return {biomes, structures, priorities, structure_sets, disabled}
 })

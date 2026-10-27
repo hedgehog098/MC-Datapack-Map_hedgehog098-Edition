@@ -1,12 +1,15 @@
+import { parseWorldgenStructure } from '../util/structures.js';
 import { defineStore } from "pinia";
 
 import { AnonymousDatapack, Datapack, DatapackList, ResourceLocation } from "mc-datapack-loader"
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch, toRaw } from "vue";
 import { DensityFunction, Holder, HolderSet, Identifier, NoiseParameters, StructureSet, WorldgenRegistries, WorldgenStructure, StructureTemplatePool, Structure, NbtFile, Registry, Json } from "deepslate";
 import { useSettingsStore } from "./useSettingsStore.js";
 import { updateUrlParam, versionMetadata } from "../util.js";
 import { useI18n } from "vue-i18n";
 
+
+import { DatapackSource, restoredDatapacks, saveDatapackSources } from '../util/datapackPersistence.js';
 
 export const useDatapackStore = defineStore('datapacks', () => {
     const uri = window.location.search.substring(1)
@@ -20,17 +23,33 @@ export const useDatapackStore = defineStore('datapacks', () => {
 
     let last_key = 0
 
-    const ds: {datapack: Datapack, key: number, id?: string}[] = [{ datapack: vanillaDatapack, key: 0 }]
+    const ds: {datapack: Datapack, key: number, id?: string, source?: DatapackSource}[] = [{ datapack: vanillaDatapack, key: 0 }]
 
-    if (datapacksParam !== undefined) {
+    const useSavedSources = datapacksParam === undefined || datapacksParam.join(',') === restoredDatapacks.flatMap(source => source.kind === 'modrinth' ? [`modrinth:${source.slug}`] : []).join(',')
+    if (datapacksParam !== undefined && !useSavedSources) {
         for (const id of datapacksParam){
             const promise = getDatapackFromId(id)
             if (promise === undefined) continue
-            ds.push({datapack: promise, key: ++last_key, id: id})
+            ds.push({datapack: promise, key: ++last_key, id: id, source: {kind: 'modrinth', slug: id.slice('modrinth:'.length)}})
         }
     }
 
-    const datapacks = reactive<{datapack: Datapack, key: number, id?: string}[]>(ds)
+    for (const source of useSavedSources ? restoredDatapacks : []) {
+        try {
+            let datapack: Datapack | undefined
+            let id: string | undefined
+            switch (source.kind) {
+                case 'zip': datapack = Datapack.fromZipFile(source.file, metadata.datapackFormat); break
+                case 'files': datapack = Datapack.fromFileList(source.files, metadata.datapackFormat); break
+                case 'folder': datapack = Datapack.fromFileSystemDirectoryHandle(source.handle, metadata.datapackFormat); break
+                case 'url': datapack = Datapack.fromZipUrl(source.url, metadata.datapackFormat); break
+                case 'modrinth': id = `modrinth:${source.slug}`; datapack = getDatapackFromId(id); break
+            }
+            if (datapack) ds.push({datapack, key: ++last_key, source, id})
+        } catch (error) { console.warn('Could not restore datapack', error) }
+    }
+
+    const datapacks = reactive<{datapack: Datapack, key: number, id?: string, source?: DatapackSource}[]>(ds)
 
     var last_version = settingsStore.mc_version
     settingsStore.$subscribe(async () => {
@@ -50,6 +69,7 @@ export const useDatapackStore = defineStore('datapacks', () => {
     })
 
     watch(datapacks, (new_datapacks) => {
+        void saveDatapackSources(new_datapacks.flatMap(d => d.source ? [toRaw(d.source)] : []))
         const ids = new_datapacks.flatMap(d => d.id ? [d.id] : [])
         updateUrlParam('datapacks', ids.length > 0 ? ids.join(',') : undefined)
     })
@@ -118,15 +138,11 @@ export const useDatapackStore = defineStore('datapacks', () => {
     }
 
     function worldgenStructureFromJson(obj: unknown){
-        const root = Json.readObject(obj) ?? {}
-        if (!versionMetadata[settingsStore.mc_version].dimensionPaddingEnabled){
-            delete root.dimension_padding
-        }
-        return WorldgenStructure.fromJson(obj)
+        return parseWorldgenStructure(obj, versionMetadata[settingsStore.mc_version].dimensionPaddingEnabled)
     }
 
-    function addDatapack(datapack: Datapack) {
-        datapacks.push({ datapack: datapack, key: ++last_key })
+    function addDatapack(datapack: Datapack, source?: DatapackSource) {
+        datapacks.push({ datapack: datapack, key: ++last_key, source })
     }
 
     async function removeDatapack(id: number) {
@@ -143,7 +159,7 @@ export const useDatapackStore = defineStore('datapacks', () => {
     async function addModrinthDatapack(slug: string){
         const url = await getModrinthUrl(slug)
         const datapack = Datapack.fromZipUrl(url, versionMetadata[settingsStore.mc_version].datapackFormat)
-        datapacks.push({ datapack: datapack, key: ++last_key, id: `modrinth:${slug}` })
+        datapacks.push({ datapack: datapack, key: ++last_key, id: `modrinth:${slug}`, source: {kind: 'modrinth', slug} })
         return datapack
     }
 

@@ -6,10 +6,13 @@ import { useRecentStore } from '../stores/useRecentStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { versionMetadata } from '../util';
 import DatapackSelection from './DatapackList.vue';
-import Footer from './Footer.vue';
+import StructureRouteSearch from './StructureRouteSearch.vue';
+import StructurePriorities from './StructurePriorities.vue';
+import LocaleChanger from './LocaleChanger.vue';
+import { useI18n } from 'vue-i18n';
 import MenuButtons from './MenuButtons.vue';
 import SettingsPanel from './SettingsPanel.vue';
-import TipMessage from './TipMessage.vue';
+
 import { EventTracker } from '../util/EventTracker';
 
     const datapackStore = useDatapackStore()
@@ -17,7 +20,7 @@ import { EventTracker } from '../util/EventTracker';
     const recentStore = useRecentStore();
 
     const file_dragging = ref(false)
-    const show_tipmessage = ref(true)
+    const {t} = useI18n()
 
     async function dropHandler(ev: DragEvent){
 
@@ -36,13 +39,13 @@ import { EventTracker } from '../util/EventTracker';
                 if (handle instanceof FileSystemDirectoryHandle){
                     EventTracker.track(`add_datapack/folder/drag_and_drop`)
                     datapack = Datapack.fromFileSystemDirectoryHandle(handle, datapackVersion)
-                    datapackStore.addDatapack(datapack)
+                    datapackStore.addDatapack(datapack, {kind: 'folder', handle})
                     recentStore.addRecentFileHandle(handle, datapack)
                 } else if (handle instanceof FileSystemFileHandle) {
                     EventTracker.track(`add_datapack/zip/drag_and_drop`)
                     const file = await handle.getFile()
                     datapack = Datapack.fromZipFile(file, datapackVersion)
-                    datapackStore.addDatapack(datapack)
+                    datapackStore.addDatapack(datapack, {kind: 'zip', file})
                     recentStore.storeAndAddRecent(file, datapack)
                 }
             } else {
@@ -51,7 +54,7 @@ import { EventTracker } from '../util/EventTracker';
                     if (file){
                         EventTracker.track(`add_datapack/zip/drag_and_drop`)
                         const datapack = Datapack.fromZipFile(file, datapackVersion)
-                        datapackStore.addDatapack(datapack)
+                        datapackStore.addDatapack(datapack, {kind: 'zip', file})
                         recentStore.storeAndAddRecent(file, datapack)
                     }
                 }
@@ -75,42 +78,30 @@ import { EventTracker } from '../util/EventTracker';
         @dragleave="file_dragging=false"
         :class="{file_dragging: file_dragging}"
     >
+        <header class="sidebar-header"><span class="eyebrow">MINECRAFT</span><h1>{{ t('local.ui.title') }}</h1></header>
         <MenuButtons />
-        <Suspense>
-            <SettingsPanel />
-        </Suspense>
-        <!--TipMessage v-if="show_tipmessage" @close="show_tipmessage=false" /-->
-        <DatapackSelection />
-        <Footer @open_popup="$emit('open_popup')" />
+        <div class="sidebar-body">
+            <details class="panel world-panel" open>
+                <summary>{{ t('local.ui.world') }}</summary>
+                <Suspense><SettingsPanel /></Suspense>
+            </details>
+            <StructurePriorities class="panel" />
+            <StructureRouteSearch class="panel" />
+            <DatapackSelection class="panel" />
+            <details class="panel interface-panel">
+                <summary>{{ t('local.ui.interface') }}</summary>
+                <LocaleChanger />
+            </details>
+        </div>
     </div>
 </template>
 
 <style scoped>
-    .sidebar {
-        height: 100%;
-        min-width: 19rem;
-        max-width: 19rem;
-        display: flex;
-        flex-direction: column;
-
-        background-color: rgb(3, 33, 58);
-        color: white;
-        
-        overflow-y: scroll;
-        padding: 1rem;
-        padding-top: 1rem;
-        gap: 1.5rem;
-        box-sizing: border-box;
-
-        transition: 0.3s;
-    }
-
-    .sidebar.file_dragging {
-        background-color: rgb(7, 68, 78);
-    }
-
-    .sidebar::-webkit-scrollbar {
-        width: 0;
-    }
-
+.sidebar { height: 100%; width: var(--sidebar-width); display: flex; flex-direction: column; background: var(--surface); color: var(--text); box-sizing: border-box; border-inline-end: 1px solid var(--border); box-shadow: 8px 0 32px #0003; }
+.sidebar-header {padding: 20px 60px 16px 20px;}
+.eyebrow {font-size: 10px; letter-spacing: .18em; color: var(--accent); font-weight: 700;}
+h1 {font-size: 20px; line-height: 1.4; margin: 3px 0 0; font-weight: 650;}
+.sidebar-body {overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding: 16px 12px 24px; display: flex; flex-direction: column; gap: 10px; scrollbar-width: thin; scrollbar-color: #415369 transparent;}
+.sidebar-body > * {flex-shrink: 0;}
+.sidebar.file_dragging {outline: 2px solid var(--accent); outline-offset: -3px;}
 </style>

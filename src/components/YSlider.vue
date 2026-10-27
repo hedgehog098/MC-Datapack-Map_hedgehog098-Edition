@@ -12,7 +12,7 @@ const settingsStore = useSettingsStore()
 
 const level_height = ref(await loadedDimensionStore.loaded_dimension.level_height)
 
-loadedDimensionStore.$subscribe(async (mutation, state) => {
+watch(() => loadedDimensionStore.revision, async () => {
     level_height.value = await loadedDimensionStore.loaded_dimension.level_height
 })
 

@@ -38,7 +38,7 @@
     }
 
     .dropdown-entry:not(.disabled):hover{
-        background-color: rgb(177, 176, 176);
+        background-color: var(--control);
     }
 
     .icon{

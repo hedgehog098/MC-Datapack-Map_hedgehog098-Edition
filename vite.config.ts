@@ -6,6 +6,9 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    watch: {ignored: ['**/tests/results/**', '**/.tools/**']}
+  },
   plugins: [
     vue(),
     VueI18nPlugin({
@@ -20,7 +23,7 @@ export default defineConfig({
         runtimeCaching: [
           // vanilla datapacks
           {
-            urlPattern: /^https?:\/\/(map\.jacobsjo\.eu|localhost:4173)\/vanilla_datapacks\/.*\.zip$/i,
+            urlPattern: ({url, sameOrigin}) => sameOrigin && /^\/vanilla_datapacks\/.*\.zip$/i.test(url.pathname),
             handler: 'CacheFirst',
             options: {
               cacheName: "vanilla-datapack-cache",
@@ -103,8 +106,8 @@ export default defineConfig({
         clientsClaim: true
       },
       manifest: {
-        name: 'Minecraft Datapack Map',
-        short_name: 'MC Datapack Map',
+        name: 'MC Datapack Map — hedgehog098 Edition',
+        short_name: 'hedgehog098 Edition',
         description: 'A Minecraft biome map capable of handling worldgen datapacks.',
         theme_color: '#03213a',
         icons: [

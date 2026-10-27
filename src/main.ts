@@ -1,3 +1,5 @@
+import { restoreDatapackSources } from './util/datapackPersistence.js'
+import { readPreference } from './util/preferences.js'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { createPinia } from 'pinia'
@@ -20,7 +22,7 @@ EventTracker.init()
 
 const uri = window.location.search.substring(1)
 const params = new URLSearchParams(uri)
-var lang = params.get('lang') ?? 'en'
+var lang = params.get('lang') ?? readPreference('language', 'zh_CN')
 if (messages?.[lang] === undefined){
     lang = 'en'
     params.set('lang', 'en')
@@ -43,4 +45,4 @@ app.use(pinia)
 app.use(i18n)
 app.component("font-awesome-icon", FontAwesomeIcon)
 app.config.globalProperties.window = window
-app.mount('#app')
+restoreDatapackSources().then(() => app.mount('#app'))

@@ -47,57 +47,15 @@ function clearStructureSearch() {
 
 <template>
     <div>
-        <div class="buttons">
-            <font-awesome-icon
-                icon="fa-plus"
-                class="button"
-                tabindex="0"
-                :class="{open: openDropdownOpen }"
-                :title="i18n.t('menu.add.title')"
-                @click="openDropdownOpen = true"
-                @keypress.enter="openDropdownOpen = true"
-            />
-            <span class="group-button" :class="{active: !searchStore.disabled}">
-                <font-awesome-icon
-                    icon="fa-magnifying-glass"
-                    class="button"
-                    tabindex="0"
-                    :class="{
-                        open: searchBiomeDropdownOpen,
-                        active: searchStore.biomes.size > 0
-                    }"
-                    :title="i18n.t('menu.search_biome.title')"
-                    @click="searchBiomeDropdownOpen = true"
-                    @keypress.enter="searchBiomeDropdownOpen = true"
-                    @contextmenu.prevent="clearBiomeSearch"    
-                    @dblclick.prevent="clearBiomeSearch"
-                />
-                <font-awesome-icon
-                    v-if="searchStore.biomes.size > 0"
-                    :icon="!searchStore.disabled ? 'fa-toggle-on' : 'fa-toggle-off'"
-                    class="button transparent"
-                    tabindex="0"
-                    :title="i18n.t('menu.search_biome.toggle')"
-                    @click.prevent="toggleBiomeSearch"
-                />
+        <nav class="buttons" :aria-label="i18n.t('local.ui.tools')">
+            <button class="button" :class="{open: openDropdownOpen}" :aria-expanded="openDropdownOpen" :title="i18n.t('menu.add.title')" @click="openDropdownOpen = !openDropdownOpen"><font-awesome-icon icon="fa-plus" />{{ i18n.t('local.ui.add') }}</button>
+            <span class="group-button">
+                <button class="button" :class="{open: searchBiomeDropdownOpen, active: searchStore.biomes.size > 0}" :aria-expanded="searchBiomeDropdownOpen" :title="i18n.t('menu.search_biome.title')" @click="searchBiomeDropdownOpen = !searchBiomeDropdownOpen" @contextmenu.prevent="clearBiomeSearch" @dblclick.prevent="clearBiomeSearch"><font-awesome-icon icon="fa-magnifying-glass" />{{ i18n.t('local.ui.biomes') }}</button>
+                <button v-if="searchStore.biomes.size > 0" class="filter-toggle" :aria-label="i18n.t('menu.search_biome.toggle')" :aria-pressed="!searchStore.disabled" @click="toggleBiomeSearch"><font-awesome-icon :icon="!searchStore.disabled ? 'fa-toggle-on' : 'fa-toggle-off'" /></button>
             </span>
-            <font-awesome-icon
-                icon="fa-location-dot"
-                class="button"
-                tabindex="0"
-                :class="{
-                    open: structureDropdownOpen,
-                active: searchStore.structures.size > 0
-                }"
-                :title="i18n.t('menu.structure_positions.title')"
-                @click="structureDropdownOpen = true"
-                @keypress.enter="structureDropdownOpen = true"
-                @contextmenu.prevent="clearStructureSearch"    
-                @dblclick.prevent="clearStructureSearch"
-            />
-
-            <font-awesome-icon v-if="settingsStore.dev_mode" icon="fa-rotate-right" class="button" tabindex="0" :title="i18n.t('menu.reload_datapacks.title')" @click="reload" @keypress.enter="reload" />
-        </div>
+            <button class="button" :class="{open: structureDropdownOpen, active: searchStore.structures.size > 0}" :aria-expanded="structureDropdownOpen" :title="i18n.t('menu.structure_positions.title')" @click="structureDropdownOpen = !structureDropdownOpen" @contextmenu.prevent="clearStructureSearch" @dblclick.prevent="clearStructureSearch"><font-awesome-icon icon="fa-location-dot" />{{ i18n.t('local.ui.structures') }}</button>
+            <button v-if="settingsStore.dev_mode" class="button" :aria-label="i18n.t('menu.reload_datapacks.title')" @click="reload"><font-awesome-icon icon="fa-rotate-right" /></button>
+        </nav>
         <div class="dropdowns">
             <Transition>
                 <OpenDropdown v-if="openDropdownOpen" v-on-click-outside="() => {openDropdownOpen=false}" @close="openDropdownOpen=false" tabindex="-1"/>
@@ -117,76 +75,10 @@ function clearStructureSearch() {
 </template>
 
 <style scoped>
-.buttons
-{
-    display: flex;
-    flex-direction: row;
-    gap: 0.5rem;
-    width: calc(100% - 2rem);
-    justify-content: center;
-    position: relative;
-}
-
-.dropdowns{
-    height: 0;
-    width: 100%;
-    position: relative;
-}
-
-.button {
-    background-color: gray;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 0.5rem;
-    padding: 0.5rem;
-    transition: 0.2s;
-    cursor: pointer;
-}
-
-.button:hover,
-.button.open {
-    background-color: rgb(177, 176, 176);
-}
-
-.button.active {
-    background-color: rgb(135, 156, 14);
-}
-
-.button.active:hover {
-    background-color: rgb(168, 192, 30);
-}
-
-.button.transparent {
-    background-color: transparent;
-}
-
-.button.transparent:hover {
-    background-color: transparent;
-}
-
-.group-button {
-    display: flex;
-    flex-direction: row;
-    border-radius: 0.5rem;
-    background-color: rgb(88, 88, 88);
-}
-
-.group-button.active {
-    background-color: rgb(77, 87, 23);
-}
-
-.spacer {
-    width: 2rem;
-}
-
-.v-enter-active,
-.v-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
-}
-
+.buttons {display: flex; gap: 6px; padding: 0 12px 16px; border-bottom: 1px solid var(--border);}
+.button {flex: 1; display: flex; gap: 7px; justify-content: center; align-items: center; padding: 9px 6px; white-space: nowrap; font-size: 12px;}
+.group-button {flex: 1; display: flex; gap: 2px;}
+.filter-toggle {padding: 3px;}
+.button.active, .button.open {background: #244c55; border-color: #4d9a9c; color: #a4f3e9;}
+.dropdowns {height: 0; position: relative; z-index: 20;}
 </style>

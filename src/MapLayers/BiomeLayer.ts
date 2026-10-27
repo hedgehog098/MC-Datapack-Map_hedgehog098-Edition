@@ -7,21 +7,21 @@ import { useSearchStore } from "../stores/useBiomeSearchStore.js";
 import { useLoadedDimensionStore } from "../stores/useLoadedDimensionStore.js";
 import { useSettingsStore } from "../stores/useSettingsStore.js";
 import { useDatapackStore } from "../stores/useDatapackStore.js";
-import { Ref, toRaw, watch } from "vue";
+import { Ref, toRaw, watch, effectScope } from "vue";
 import { ResourceLocation } from "mc-datapack-loader";
 
-const WORKER_COUNT = 4
+const WORKER_COUNT = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1))
 
 type Tile = {
 	coords: L.Coords,
 	canvas: HTMLCanvasElement,
 	ctx: CanvasRenderingContext2D,
 	done: L.DoneCallback,
-	array?: {
-		surface: number,
-		biome: string,
-		terrain: number
-	}[][],
+    surfaceValues?: Float64Array,
+    terrainValues?: Float64Array,
+    biomeValues?: Uint16Array,
+    palette?: string[],
+    requestId: number,
 	step?: number,
 	isRendering?: boolean,
 	workerId: number
@@ -29,6 +29,9 @@ type Tile = {
 
 export class BiomeLayer extends L.GridLayer {
 	private next_worker_id = 0
+    private requestId = 0
+    private disposed = false
+    private effects = effectScope(true)
 
 	private Tiles: { [key: string]: Tile } = {}
 	private tileSize = 0
@@ -44,6 +47,7 @@ export class BiomeLayer extends L.GridLayer {
 	private datapackLoader: Promise<any> | undefined
 
 	private generationVersion = 0
+    private workerUpdates: Promise<void> = Promise.resolve()
 	private waveImage: Promise<HTMLImageElement>
 
 	constructor(options: L.GridLayerOptions, private do_hillshade: Ref<boolean>, private show_sealevel: Ref<boolean>, private project_down: Ref<boolean>, private y: Ref<number>) {
@@ -65,6 +69,7 @@ export class BiomeLayer extends L.GridLayer {
 			})
 
 
+		this.effects.run(() => {
 		watch([this.searchStore.biomes, () => this.searchStore.disabled], ([biomes, disabled], [oldBiomes, oldDisabled]) => {
 			// Do not re-render if no biomes were filtered, regardless of the disabled state
 			if (oldDisabled !== disabled && oldBiomes.size === 0 && biomes.size === 0) return
@@ -80,34 +85,43 @@ export class BiomeLayer extends L.GridLayer {
 		})
 
 		watch(this.project_down, () => {
-			this.updateWorkers({
+			this.datapackLoader = this.updateWorkers({
 				settings: true
 			})
 			this.redraw()
 		})
 
 		watch(this.y, () => {
-			this.updateWorkers({
+			this.datapackLoader = this.updateWorkers({
 				settings: true
 			})
 			this.redraw()
 		})
 
-		this.loadedDimensionStore.$subscribe(async (mutation, state) => {
-			await this.updateWorkers({
+		watch(() => this.loadedDimensionStore.revision, async () => {
+			await (this.datapackLoader = this.updateWorkers({
 				settings: true,
 				dimension: true,
 				registires: true
-			})
+			}))
 			this.redraw()
 		})
 
+        })
 	}
+
+    onRemove(map: L.Map): this {
+        this.disposed = true
+        this.effects.stop()
+        this.workers.forEach(worker => worker.terminate())
+        this.Tiles = {}
+        return super.onRemove(map)
+    }
 
 	// ===== Draw tiles that have generated biomes =====
 	async renderTile(tile: Tile) {
 		tile.isRendering = false
-		if (tile.array === undefined || tile.step === undefined) {
+		if (tile.surfaceValues === undefined || tile.terrainValues === undefined || tile.biomeValues === undefined || tile.palette === undefined || tile.step === undefined) {
 			console.warn("trying to render empty tile")
 			return
 		}
@@ -116,6 +130,9 @@ export class BiomeLayer extends L.GridLayer {
 
 		const waveImage = await this.waveImage
 
+		if (this.disposed) return
+        const width = this.tileSize * this.calcResolution + 2
+
 		const project_down = this.project_down.value
 		const do_hillshade = this.do_hillshade.value
 		const show_sealevel = this.show_sealevel.value
@@ -123,7 +140,7 @@ export class BiomeLayer extends L.GridLayer {
 
 		for (let x = 0; x < this.tileSize * this.calcResolution; x++) {
 			for (let z = 0; z < this.tileSize * this.calcResolution; z++) {
-				const biome = tile.array[x + 1][z + 1].biome
+				const biome = tile.palette[tile.biomeValues[(x + 1) * width + (z + 1)]]
 
 				if (this.searchStore.biomes.size > 0
 					&& !this.searchStore.biomes.has(biome)
@@ -133,15 +150,15 @@ export class BiomeLayer extends L.GridLayer {
 				}
 
 				let hillshade = 1.0
-				const y = project_down ? Math.min(tile.array[x + 1][z + 1].surface, this.y.value) : this.y.value
-				const belowSurface = y < tile.array[x + 1][z + 1].surface
-				if (do_hillshade && tile.array[x + 1][z + 1].terrain < 0){
+				const y = project_down ? Math.min(tile.surfaceValues[(x + 1) * width + (z + 1)], this.y.value) : this.y.value
+				const belowSurface = y < tile.surfaceValues[(x + 1) * width + (z + 1)]
+				if (do_hillshade && tile.terrainValues[(x + 1) * width + (z + 1)] < 0){
 					hillshade = 0.15
 				} else if (do_hillshade && project_down && !belowSurface) {
 
 					hillshade = calculateHillshade(
-						tile.array[x + 2][z + 1].surface - tile.array[x][z + 1].surface,
-						tile.array[x + 1][z + 2].surface - tile.array[x + 1][z].surface,
+						tile.surfaceValues[(x + 2) * width + (z + 1)] - tile.surfaceValues[(x) * width + (z + 1)],
+						tile.surfaceValues[(x + 1) * width + (z + 2)] - tile.surfaceValues[(x + 1) * width + (z)],
 						tile.step
 					)
 				}
@@ -163,11 +180,11 @@ export class BiomeLayer extends L.GridLayer {
 	}
 
 	async rerender() {
-		console.log("rerendering")
+
 		for (const key in this.Tiles) {
 			if (!this.Tiles[key].isRendering) {
 				this.Tiles[key].isRendering = true
-				setTimeout(() => this.renderTile(this.Tiles[key]), 0)
+				setTimeout(() => { const tile = this.Tiles[key]; if (tile && !this.disposed) void this.renderTile(tile) }, 0)
 			}
 		}
 	}
@@ -179,14 +196,17 @@ export class BiomeLayer extends L.GridLayer {
 		for (let i = 0; i < WORKER_COUNT; i++) {
 			const worker = new MultiNoiseCalculator()
 			worker.onmessage = (ev) => {
-				if (ev.data.generationVersion < this.generationVersion) {
+				if (this.disposed || ev.data.generationVersion !== this.generationVersion) {
 					return
 				}
 				const tile = this.Tiles[ev.data.key]
-				if (tile === undefined)
+				if (tile === undefined || tile.requestId !== ev.data.requestId)
 					return
 
-				tile.array = ev.data.array
+				tile.surfaceValues = ev.data.surfaceValues
+                tile.terrainValues = ev.data.terrainValues
+                tile.biomeValues = ev.data.biomeValues
+                tile.palette = ev.data.palette
 				tile.step = ev.data.step
 
 				tile.isRendering = true
@@ -200,7 +220,13 @@ export class BiomeLayer extends L.GridLayer {
 		}
 	}
 
-	async updateWorkers(do_update: {
+    updateWorkers(update: {registires?: boolean, dimension?: boolean, settings?: boolean}): Promise<void> {
+        const pending = this.workerUpdates.then(() => this.performWorkerUpdate(update))
+        this.workerUpdates = pending.catch(error => console.error('Worker update failed', error))
+        return pending
+    }
+
+	private async performWorkerUpdate(do_update: {
 		registires?: boolean,
 		dimension?: boolean,
 		settings?: boolean,
@@ -233,7 +259,7 @@ export class BiomeLayer extends L.GridLayer {
 			update.project_down = this.project_down.value
 		}
 
-		this.workers.forEach(w => w.postMessage({ update }))
+		if (!this.disposed && update.generationVersion === this.generationVersion) this.workers.forEach(w => w.postMessage({ update }))
 	}
 
 	generateTile(key: string, coords: L.Coords, worker_id: number) {
@@ -253,6 +279,8 @@ export class BiomeLayer extends L.GridLayer {
 
 		const task = {
 			key,
+            requestId: this.Tiles[key].requestId,
+            generationVersion: this.generationVersion,
 			min,
 			max,
 			tileSize: this.tileSize * this.calcResolution
@@ -273,27 +301,24 @@ export class BiomeLayer extends L.GridLayer {
 			return tile;
 		}
 
-		this.datapackLoader?.then(() => {
-			const key = this._tileCoordsToKey(coords)
-			this.Tiles[key] = { coords: coords, canvas: tile, ctx: ctx, done: done, workerId: this.next_worker_id }
-
-			this.generateTile(key, coords, this.next_worker_id)
-			this.next_worker_id = (this.next_worker_id + 1) % WORKER_COUNT
-		})
+        const key = this._tileCoordsToKey(coords)
+        const entry: Tile = {coords, canvas: tile, ctx, done, workerId: this.next_worker_id, requestId: ++this.requestId}
+        this.Tiles[key] = entry
+        this.next_worker_id = (this.next_worker_id + 1) % WORKER_COUNT
+        this.datapackLoader?.then(() => {
+            if (this.disposed || this.Tiles[key] !== entry) return
+            this.generateTile(key, coords, entry.workerId)
+        })
 
 		return tile
 	}
 
-	_removeTile(key: string) {
-		if (this.Tiles[key] === undefined)
-			return
-
-		this.workers[this.Tiles[key].workerId].postMessage({ cancel: key })
-
-		delete this.Tiles[key]
-
-		// @ts-expect-error: _removeTile does not exist
-		L.TileLayer.prototype._removeTile.call(this, key)
-	}
-
+    _removeTile(key: string) {
+        const tile = this.Tiles[key]
+        if (tile && !this.disposed) this.workers[tile.workerId].postMessage({ cancel: key })
+        delete this.Tiles[key]
+        // Leaflet must remove its own entry even if calculation has not started yet.
+        // @ts-expect-error: Leaflet internal lifecycle method
+        L.GridLayer.prototype._removeTile.call(this, key)
+    }
 }
